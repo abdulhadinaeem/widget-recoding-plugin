@@ -404,7 +404,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
-  widget_recorder:
+  widget_recorder_plus:
     dependency: "direct main"
     description:
       path: ".."

@@ -1,6 +1,6 @@
-# widget_recorder
+# widget_recorder_plus
 
-[![pub package](https://img.shields.io/pub/v/widget_recorder.svg)](https://pub.dev/packages/widget_recorder)
+[![pub package](https://img.shields.io/pub/v/widget_recorder_plus.svg)](https://pub.dev/packages/widget_recorder_plus)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.7.0+-blue.svg)](https://flutter.dev)
 
@@ -35,7 +35,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  widget_recorder: ^1.0.0
+  widget_recorder_plus: ^1.0.0
 ```
 
 Then run:
@@ -49,7 +49,7 @@ flutter pub get
 ### 1. Import the Package
 
 ```dart
-import 'package:widget_recorder/widget_recorder.dart';
+import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 ```
 
 ### 2. Create a Controller

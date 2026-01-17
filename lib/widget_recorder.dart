@@ -12,7 +12,7 @@ class WidgetRecorderController {
 
   WidgetRecorderController({this.onComplete, this.onError});
 
-  final MethodChannel _channel = const MethodChannel('widget_recorder');
+  final MethodChannel _channel = const MethodChannel('widget_recorder_plus');
   bool _isRecording = false;
   Timer? _timer;
   final GlobalKey _boundaryKey = GlobalKey();

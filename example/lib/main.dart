@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:widget_recorder/widget_recorder.dart';
+import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 import 'package:open_file/open_file.dart';
 
 void main() => runApp(const MyApp());

@@ -28,7 +28,7 @@ class WidgetRecorderPlugin : FlutterPlugin, MethodCallHandler {
     private var muxerStarted = false
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "widget_recorder")
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "widget_recorder_plus")
         channel.setMethodCallHandler(this)
     }
 

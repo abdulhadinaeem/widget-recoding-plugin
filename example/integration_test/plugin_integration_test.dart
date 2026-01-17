@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:widget_recorder/widget_recorder.dart';
+import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 import 'package:flutter/material.dart';
 
 void main() {

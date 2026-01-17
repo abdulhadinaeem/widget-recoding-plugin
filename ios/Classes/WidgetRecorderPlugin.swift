@@ -15,7 +15,7 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
     private let queue = DispatchQueue(label: "widget_recorder_queue")
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "widget_recorder", binaryMessenger: registrar.messenger())
+        let channel = FlutterMethodChannel(name: "widget_recorder_plus", binaryMessenger: registrar.messenger())
         let instance = WidgetRecorderPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
