@@ -18,16 +18,25 @@ A powerful Flutter package to record any widget as a high-quality MP4 video. Per
 - Smooth Encoding - Optimized for performance
 - Proper Finalization - Ensures video files are always valid
 
+
+### iOS Support Notice
+
+iOS support is currently not implemented.
+
+While an iOS folder exists, native iOS recording functionality is not present.
+Until this is added, the plugin should be considered Android-only.
+
+
 ## Platform Support
 
-| Platform | Min Version | Status |
-|----------|-------------|--------|
-| Android  | API 21 (5.0) | Fully Supported |
-| iOS      | 13.0        | Fully Supported |
-| Web      | -           | Not Supported |
-| macOS    | -           | Not Supported |
-| Windows  | -           | Not Supported |
-| Linux    | -           | Not Supported |
+| Platform | Status |
+|---------|--------|
+| Android | Supported |
+| iOS | Not supported |
+| Web | Not supported |
+| macOS | Not supported |
+| Windows | Not supported |
+| Linux | Not supported |
 
 ## Installation
 
