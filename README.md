@@ -6,9 +6,18 @@
 
 A powerful Flutter package to record any widget as a high-quality MP4 video. Perfect for creating tutorials, demos, animations, and exporting dynamic content with just a few lines of code.
 
+## Demo
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/abdulhadinaeem/widget-recoding-plugin/master/example_video%20(1).gif" alt="Widget Recorder Demo" width="300"/>
+</p>
+
+
 ## Features
 
 - Record Any Widget - Capture any Flutter widget as MP4 video
+- Audio Recording - Optional microphone audio capture (iOS & Android)
+- Automatic Permissions - Built-in permission handling with customizable dialogs
 - Simple API - Just 3 lines to integrate
 - Configurable FPS - 15-60 FPS (default 60)
 - Cross-Platform - Android (API 21+) and iOS (13+)
@@ -35,7 +44,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  widget_recorder_plus: ^1.0.0
+  widget_recorder_plus: ^1.0.2
 ```
 
 Then run:
@@ -55,7 +64,11 @@ import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 ### 2. Create a Controller
 
 ```dart
-final controller = WidgetRecorderController();
+final controller = WidgetRecorderController(
+  recordAudio: true, // Enable audio recording (permission handled automatically!)
+  onComplete: (path) => print('Video saved: $path'),
+  onError: (error) => print('Error: $error'),
+);
 ```
 
 ### 3. Wrap Your Widget
@@ -196,12 +209,16 @@ Main controller for managing widget recording.
 WidgetRecorderController({
   Function(String path)? onComplete,
   Function(String error)? onError,
+  bool recordAudio = false,
+  Widget Function(BuildContext context, VoidCallback openSettings)? permissionDeniedDialog,
 })
 ```
 
 **Parameters:**
 - `onComplete` - Called when recording finishes with the video file path
 - `onError` - Called when an error occurs during recording
+- `recordAudio` - Enable microphone audio recording (default: false, permission handled automatically)
+- `permissionDeniedDialog` - Optional custom dialog when permission is denied
 
 #### Properties
 
@@ -217,10 +234,16 @@ bool isRecording = controller.isRecording;
 
 ```dart
 // Start recording (auto-generates file path in temp directory)
+// Permission is handled automatically if recordAudio is true
 await controller.start();
 
 // Stop recording (returns file path)
 final path = await controller.stop();
+
+// Manual permission control (optional - not needed with automatic handling)
+bool hasPermission = await controller.hasPermission();
+bool granted = await controller.requestPermission();
+await controller.openSettings();
 
 // Clean up resources
 controller.dispose();
@@ -238,6 +261,93 @@ WidgetRecorder(
 ```
 
 ## Usage Examples
+
+### Automatic Permission Handling
+
+When `recordAudio: true`, permissions are handled automatically - no manual checks needed!
+
+```dart
+final controller = WidgetRecorderController(
+  recordAudio: true, // Permission handled automatically
+  onComplete: (path) => print('Saved: $path'),
+  onError: (error) => print('Error: $error'),
+);
+
+// Just call start - permission dialog shows automatically if needed
+await controller.start();
+```
+
+**Custom Permission Dialog (Optional):**
+
+```dart
+final controller = WidgetRecorderController(
+  recordAudio: true,
+  permissionDeniedDialog: (context, openSettings) {
+    return AlertDialog(
+      title: const Text('Microphone Access Required'),
+      content: const Text('Please enable microphone in Settings.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            openSettings(); // Opens app settings
+            Navigator.pop(context, true);
+          },
+          child: const Text('Open Settings'),
+        ),
+      ],
+    );
+  },
+);
+```
+
+See [AUTOMATIC_PERMISSIONS.md](AUTOMATIC_PERMISSIONS.md) for detailed documentation.
+
+### Recording with Audio
+
+```dart
+class AudioRecordingDemo extends StatefulWidget {
+  @override
+  State<AudioRecordingDemo> createState() => _AudioRecordingDemoState();
+}
+
+class _AudioRecordingDemoState extends State<AudioRecordingDemo> {
+  late WidgetRecorderController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = WidgetRecorderController(
+      recordAudio: true, // Enable audio recording (permission handled automatically!)
+      onComplete: (path) {
+        print('Video with audio saved: $path');
+      },
+    );
+  }
+
+  Future<void> startRecordingWithAudio() async {
+    // Just call start - permission is handled automatically!
+    await controller.start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WidgetRecorder(
+      controller: controller,
+      child: YourWidget(),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+}
+```
 
 ### Recording Animations
 

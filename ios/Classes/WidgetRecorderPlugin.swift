@@ -111,35 +111,61 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
                   self.isRunning,
                   let pixelBufferPool = self.pixelBufferAdaptor?.pixelBufferPool else { return }
             
+            // Validate frame data size
+            let expectedSize = self.width * self.height * 4
+            guard frameBytes.count >= expectedSize else {
+                print("Error: Frame data size mismatch. Expected: \(expectedSize), Got: \(frameBytes.count)")
+                return
+            }
+            
             var pixelBuffer: CVPixelBuffer?
             let status = CVPixelBufferPoolCreatePixelBuffer(nil, pixelBufferPool, &pixelBuffer)
             
-            guard status == kCVReturnSuccess, let buffer = pixelBuffer else { return }
+            guard status == kCVReturnSuccess, let buffer = pixelBuffer else { 
+                print("Error: Failed to create pixel buffer, status: \(status)")
+                return 
+            }
             
             CVPixelBufferLockBaseAddress(buffer, [])
             defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
             
-            guard let pixelData = CVPixelBufferGetBaseAddress(buffer) else { return }
+            guard let pixelData = CVPixelBufferGetBaseAddress(buffer) else { 
+                print("Error: Failed to get pixel buffer base address")
+                return 
+            }
             
             // Get the actual bytes per row (stride)
             let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
             let ptr = pixelData.assumingMemoryBound(to: UInt8.self)
             
             // Copy RGBA data row by row, converting to BGRA
-            var srcOffset = 0
-            for row in 0..<self.height {
-                let dstOffset = row * bytesPerRow
-                for col in 0..<self.width {
-                    let srcIdx = srcOffset + (col * 4)
-                    let dstIdx = dstOffset + (col * 4)
-                    
-                    // RGBA to BGRA conversion
-                    ptr[dstIdx] = frameBytes[srcIdx + 2]     // B
-                    ptr[dstIdx + 1] = frameBytes[srcIdx + 1] // G
-                    ptr[dstIdx + 2] = frameBytes[srcIdx]     // R
-                    ptr[dstIdx + 3] = frameBytes[srcIdx + 3] // A
+            frameBytes.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+                guard let baseAddress = bytes.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
+                    print("Error: Failed to get frame bytes base address")
+                    return
                 }
-                srcOffset += self.width * 4
+                
+                for row in 0..<self.height {
+                    let srcOffset = row * self.width * 4
+                    let dstOffset = row * bytesPerRow
+                    
+                    for col in 0..<self.width {
+                        let srcIdx = srcOffset + (col * 4)
+                        let dstIdx = dstOffset + (col * 4)
+                        
+                        // Bounds check
+                        guard srcIdx + 3 < frameBytes.count else {
+                            print("Error: Source index out of bounds at row \(row), col \(col)")
+                            return
+                        }
+                        
+                        // RGBA to BGRA conversion
+                        ptr[dstIdx] = baseAddress[srcIdx + 2]     // B
+                        ptr[dstIdx + 1] = baseAddress[srcIdx + 1] // G
+                        ptr[dstIdx + 2] = baseAddress[srcIdx]     // R
+                        ptr[dstIdx + 3] = baseAddress[srcIdx + 3] // A
+                    }
+                }
             }
             
             let presentationTime = CMTimeMake(value: self.frameCount, timescale: Int32(self.fps))

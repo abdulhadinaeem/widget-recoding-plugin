@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 import 'package:open_file/open_file.dart';
+import 'camera_recording_test.dart';
 
 void main() => runApp(const MyApp());
 
@@ -37,6 +38,7 @@ class _RecordingDemoState extends State<RecordingDemo>
   void initState() {
     super.initState();
     controller = WidgetRecorderController(
+      recordAudio: true, // Permission handled automatically
       onComplete: (path) {
         setState(() {
           videoPath = path;
@@ -147,7 +149,7 @@ class _RecordingDemoState extends State<RecordingDemo>
                       ? null
                       : () async {
                           setState(() => statusMessage = '🔴 Recording...');
-                          await controller.start();
+                          await controller.start(); // Permission handled automatically
                         },
                   icon: const Icon(Icons.fiber_manual_record),
                   label: const Text('Start'),
@@ -169,6 +171,24 @@ class _RecordingDemoState extends State<RecordingDemo>
             Text(
               statusMessage,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CameraRecordingTest(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Test Camera Recording'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
             if (videoPath != null) ...[
               const SizedBox(height: 20),
