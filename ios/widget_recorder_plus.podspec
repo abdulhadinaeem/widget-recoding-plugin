@@ -3,15 +3,15 @@
 # Run `pod lib lint widget_recorder.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'widget_recorder'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.name             = 'widget_recorder_plus'
+  s.version          = '1.0.1'
+  s.summary          = 'Record any Flutter widget as MP4 video with a simple API.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+Record any Flutter widget as MP4 video with a simple API. Perfect for creating tutorials, demos, and exporting animated content. Supports Android (API 21+) and iOS (13+).
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/abdulhadinaeem/widget-recoding-plugin'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Abdul Hadi Naeem' => 'abdulhadinaeem@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'

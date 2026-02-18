@@ -1,6 +1,6 @@
 name: widget_recorder_plus
 description: Record any Flutter widget as MP4 video with a simple API. Perfect for creating tutorials, demos, and exporting animated content. Supports Android (API 21+) and iOS (13+).
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/abdulhadinaeem/widget-recoding-plugin
 issue_tracker: https://github.com/abdulhadinaeem/widget-recoding-plugin/issues
 homepage: https://github.com/abdulhadinaeem/widget-recoding-plugin

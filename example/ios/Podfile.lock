@@ -1,0 +1,41 @@
+PODS:
+  - Flutter (1.0.1)
+  - integration_test (0.0.1):
+    - Flutter
+  - open_file_ios (1.0.3):
+    - Flutter
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - widget_recorder_plus (1.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - open_file_ios (from `.symlinks/plugins/open_file_ios/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - widget_recorder_plus (from `.symlinks/plugins/widget_recorder_plus/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
+  open_file_ios:
+    :path: ".symlinks/plugins/open_file_ios/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  widget_recorder_plus:
+    :path: ".symlinks/plugins/widget_recorder_plus/ios"
+
+SPEC CHECKSUMS:
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
+  open_file_ios: 46184d802ee7959203f6392abcfa0dd49fdb5be0
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  widget_recorder_plus: 9be53e8738ff223e82f5b443533b31cfe39e5483
+
+PODFILE CHECKSUM: 251cb053df7158f337c0712f2ab29f4e0fa474ce
+
+COCOAPODS: 1.16.2

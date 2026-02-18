@@ -32,11 +32,13 @@ class _RecordingDemoState extends State<RecordingDemo>
   late AnimationController animController;
   String? videoPath;
   String statusMessage = 'Ready to record';
+  bool hasPermission = false;
 
   @override
   void initState() {
     super.initState();
     controller = WidgetRecorderController(
+      recordAudio: true, 
       onComplete: (path) {
         setState(() {
           videoPath = path;
@@ -67,6 +69,49 @@ class _RecordingDemoState extends State<RecordingDemo>
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
+    
+    checkPermission();
+  }
+
+  Future<void> checkPermission() async {
+    final hasPermission = await controller.hasPermission();
+    setState(() {
+      this.hasPermission = hasPermission;
+    });
+  }
+
+  Future<void> requestPermission() async {
+    final granted = await controller.requestPermission();
+    setState(() {
+      hasPermission = granted;
+    });
+
+    if (!granted) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Permission Required'),
+          content: const Text(
+            'Microphone permission is required for audio recording. '
+            'Please enable it in app settings.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                controller.openSettings();
+                Navigator.pop(context);
+              },
+              child: const Text('Settings'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -84,9 +129,10 @@ class _RecordingDemoState extends State<RecordingDemo>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Wrap widget to record
+            
             WidgetRecorder(
               controller: controller,
+              
               child: Container(
                 width: 300,
                 height: 300,
@@ -146,6 +192,14 @@ class _RecordingDemoState extends State<RecordingDemo>
                   onPressed: controller.isRecording
                       ? null
                       : () async {
+                          // Request permission if not granted
+                          if (!hasPermission) {
+                            await requestPermission();
+                            if (!hasPermission) {
+                              setState(() => statusMessage = '❌ Microphone permission required');
+                              return;
+                            }
+                          }
                           setState(() => statusMessage = '🔴 Recording...');
                           await controller.start();
                         },
@@ -166,6 +220,25 @@ class _RecordingDemoState extends State<RecordingDemo>
               ],
             ),
             const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  hasPermission ? Icons.mic : Icons.mic_off,
+                  color: hasPermission ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  hasPermission ? 'Audio enabled' : 'Audio disabled',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: hasPermission ? Colors.green : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Text(
               statusMessage,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

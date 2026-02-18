@@ -6,15 +6,23 @@
 
 A powerful Flutter package to record any widget as a high-quality MP4 video. Perfect for creating tutorials, demos, animations, and exporting dynamic content with just a few lines of code.
 
+## Demo
+
+<p align="center">
+  <img src="https://github.com/abdulhadinaeem/widget-recoding-plugin/blob/master/example_video%20(1).gif" alt="Widget Recorder Demo" width="300"/>
+</p>
+
 ## Features
 
 - Record Any Widget - Capture any Flutter widget as MP4 video
+- Audio Recording - Optional microphone audio capture (iOS & Android)
 - Simple API - Just 3 lines to integrate
 - Configurable FPS - 15-60 FPS (default 60)
 - Cross-Platform - Android (API 21+) and iOS (13+)
 - Auto File Management - No path management needed
 - Built-in Callbacks - Success and error handling
-- High Quality - Native H.264 codec with 10 Mbps/megapixel bitrate
+- High Quality - Native H.264 video codec with optimized bitrate
+- AAC Audio - High-quality 128kbps stereo audio encoding
 - Smooth Encoding - Optimized for performance
 - Proper Finalization - Ensures video files are always valid
 
@@ -35,7 +43,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  widget_recorder_plus: ^1.0.0
+  widget_recorder_plus: ^1.0.1
 ```
 
 Then run:
@@ -55,7 +63,9 @@ import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 ### 2. Create a Controller
 
 ```dart
-final controller = WidgetRecorderController();
+final controller = WidgetRecorderController(
+  recordAudio: true, // Enable audio recording (optional, default: false)
+);
 ```
 
 ### 3. Wrap Your Widget
@@ -81,7 +91,7 @@ final videoPath = await controller.stop();
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:widget_recorder/widget_recorder.dart';
+import 'package:widget_recorder_plus/widget_recorder_plus.dart';
 import 'package:open_file/open_file.dart';
 
 void main() => runApp(const MyApp());
@@ -196,12 +206,14 @@ Main controller for managing widget recording.
 WidgetRecorderController({
   Function(String path)? onComplete,
   Function(String error)? onError,
+  bool recordAudio = false,
 })
 ```
 
 **Parameters:**
 - `onComplete` - Called when recording finishes with the video file path
 - `onError` - Called when an error occurs during recording
+- `recordAudio` - Enable microphone audio recording (default: false)
 
 #### Properties
 
@@ -222,6 +234,15 @@ await controller.start();
 // Stop recording (returns file path)
 final path = await controller.stop();
 
+// Check if microphone permission is granted
+bool hasPermission = await controller.hasPermission();
+
+// Request microphone permission
+bool granted = await controller.requestPermission();
+
+// Open app settings
+await controller.openSettings();
+
 // Clean up resources
 controller.dispose();
 ```
@@ -238,6 +259,57 @@ WidgetRecorder(
 ```
 
 ## Usage Examples
+
+### Recording with Audio
+
+```dart
+class AudioRecordingDemo extends StatefulWidget {
+  @override
+  State<AudioRecordingDemo> createState() => _AudioRecordingDemoState();
+}
+
+class _AudioRecordingDemoState extends State<AudioRecordingDemo> {
+  late WidgetRecorderController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = WidgetRecorderController(
+      recordAudio: true, // Enable audio recording
+      onComplete: (path) {
+        print('Video with audio saved: $path');
+      },
+    );
+  }
+
+  Future<void> startRecordingWithAudio() async {
+    // Check and request permission using built-in methods
+    if (!await controller.hasPermission()) {
+      bool granted = await controller.requestPermission();
+      if (!granted) {
+        print('Microphone permission denied');
+        return;
+      }
+    }
+    
+    await controller.start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WidgetRecorder(
+      controller: controller,
+      child: YourWidget(),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+}
+```
 
 ### Recording Animations
 
@@ -337,27 +409,89 @@ Future<void> toggleRecording() async {
 
 ## Permissions
 
+The package handles permission requests automatically through built-in methods. No additional permission packages are required!
+
 ### Android
 
-Add to `android/app/src/main/AndroidManifest.xml` (only if saving to external storage):
+Add to `android/app/src/main/AndroidManifest.xml`:
 
 ```xml
+<!-- Required for audio recording -->
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+<!-- Optional: Only if saving to external storage -->
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
     android:maxSdkVersion="32" />
 ```
 
-Note: By default, videos are saved to app-specific directories (no permission needed).
-
 ### iOS
 
-Add to `ios/Runner/Info.plist` (only if saving to Photos library):
+Add to `ios/Runner/Info.plist`:
 
 ```xml
+<!-- Required for audio recording -->
+<key>NSMicrophoneUsageDescription</key>
+<string>We need access to your microphone to record audio with videos</string>
+
+<!-- Optional: Only if saving to Photos library -->
 <key>NSPhotoLibraryAddUsageDescription</key>
 <string>We need access to save recorded videos</string>
 ```
 
-Note: By default, videos are saved to app-specific directories (no permission needed).
+### Requesting Permission in Code
+
+The package provides built-in permission handling methods:
+
+```dart
+// Check if permission is granted
+bool hasPermission = await controller.hasPermission();
+
+// Request permission (shows system dialog)
+bool granted = await controller.requestPermission();
+
+// Open app settings (if permission is denied)
+await controller.openSettings();
+```
+
+**Complete Example:**
+
+```dart
+Future<void> startRecording() async {
+  // Check permission first
+  if (!await controller.hasPermission()) {
+    // Request permission
+    bool granted = await controller.requestPermission();
+    
+    if (!granted) {
+      // Show dialog to open settings
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Permission Required'),
+          content: Text('Please enable microphone permission in settings'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                controller.openSettings();
+                Navigator.pop(context);
+              },
+              child: Text('Settings'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+  }
+  
+  // Start recording
+  await controller.start();
+}
+```
 
 ## Performance Tips
 
@@ -394,11 +528,11 @@ Solution: Ensure Swift support is enabled. Update iOS deployment target to 13.0+
 
 ## Limitations
 
-- Audio is not captured (video only)
 - Widget must be visible on screen during recording
 - Platform views (WebView, MapView) may not capture correctly
 - Not suitable for real-time streaming
 - Maximum recommended widget size: 1920x1080
+- Audio recording requires microphone permission
 
 ## How It Works
 
@@ -412,11 +546,13 @@ Solution: Ensure Swift support is enabled. Update iOS deployment target to 13.0+
 | Property | Value |
 |----------|-------|
 | Format | MP4 (MPEG-4) |
-| Codec | H.264 (AVC) |
+| Video Codec | H.264 (AVC) |
+| Audio Codec | AAC-LC (when enabled) |
 | Container | MP4 |
-| Bitrate | 10 Mbps per megapixel |
+| Video Bitrate | Optimized based on resolution and FPS |
+| Audio Bitrate | 128 kbps stereo (when enabled) |
+| Audio Sample Rate | 44.1 kHz |
 | FPS | Configurable (15-60, default 60) |
-| Audio | Not supported |
 | Color Space | YUV420 (Android), BGRA (iOS) |
 
 ## App Store Compliance
@@ -444,6 +580,35 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 See CHANGELOG.md for version history and updates.
 
+## Contributors
+
+This package is developed and maintained by:
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/abdulhadinaeem">
+        <img src="https://github.com/abdulhadinaeem.png" width="100px;" alt="Abdul Hadi"/>
+        <br />
+        <sub><b>Abdul Hadi Naeem</b></sub>
+      </a>
+      <br />
+      <a href="https://github.com/abdulhadinaeem" title="Profile">💻 📖 🎨</a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/UmarMaya">
+        <img src="https://github.com/UmarMaya.png" width="100px;" alt="Umar Maya"/>
+        <br />
+        <sub><b>Umar Maya</b></sub>
+      </a>
+      <br />
+      <a href="https://github.com/UmarMaya" title="Profile">💻 🐛 🤔</a>
+    </td>
+  </tr>
+</table>
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
 ---
 
-Made with love for Flutter developers
+Made with ❤️ for Flutter developers

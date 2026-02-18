@@ -5,14 +5,19 @@ import AVFoundation
 public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
     private var assetWriter: AVAssetWriter?
     private var videoInput: AVAssetWriterInput?
+    private var audioInput: AVAssetWriterInput?
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
+    private var audioEngine: AVAudioEngine?
     private var frameCount: Int64 = 0
+    private var audioSampleCount: Int64 = 0
     private var fps: Int = 60
     private var width: Int = 0
     private var height: Int = 0
     private var outputPath: String?
     private var isRunning = false
+    private var recordAudio = false
     private let queue = DispatchQueue(label: "widget_recorder_queue")
+    private let audioQueue = DispatchQueue(label: "widget_recorder_audio_queue")
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "widget_recorder_plus", binaryMessenger: registrar.messenger())
@@ -22,6 +27,15 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "checkPermission":
+            checkMicrophonePermission(result: result)
+            
+        case "requestPermission":
+            requestMicrophonePermission(result: result)
+            
+        case "openSettings":
+            openAppSettings(result: result)
+            
         case "startRecording":
             guard let args = call.arguments as? [String: Any] else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
@@ -31,6 +45,7 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
             height = args["height"] as? Int ?? 0
             fps = args["fps"] as? Int ?? 60
             outputPath = args["outputPath"] as? String
+            recordAudio = args["recordAudio"] as? Bool ?? false
             startEncoding()
             result(nil)
             
@@ -51,6 +66,33 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
+    
+    private func checkMicrophonePermission(result: @escaping FlutterResult) {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        result(status == .authorized)
+    }
+    
+    private func requestMicrophonePermission(result: @escaping FlutterResult) {
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
+            DispatchQueue.main.async {
+                result(granted)
+            }
+        }
+    }
+    
+    private func openAppSettings(result: @escaping FlutterResult) {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:]) { success in
+                    result(success)
+                }
+            } else {
+                result(false)
+            }
+        } else {
+            result(false)
+        }
+    }
 
     private func startEncoding() {
         guard let path = outputPath else { return }
@@ -62,18 +104,28 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
         do {
             assetWriter = try AVAssetWriter(outputURL: url, fileType: .mp4)
             
-            // Calculate high-quality bitrate: 10 Mbps per megapixel
-            let megapixels = Double(width * height) / 1_000_000.0
-            let bitrate = max(Int(10_000_000 * megapixels), 5_000_000)
+            // Calculate optimal bitrate based on resolution and fps
+            // Formula: pixels * fps * bitsPerPixel * quality_factor
+            let pixels = width * height
+            let bitsPerPixel: Double = 0.15 // Balanced quality
+            let qualityFactor: Double = 1.2 // Slight boost for clarity
+            let bitrate = Int(Double(pixels) * Double(fps) * bitsPerPixel * qualityFactor)
+            
+            // Clamp bitrate to reasonable range (3-50 Mbps)
+            let finalBitrate = min(max(bitrate, 3_000_000), 50_000_000)
             
             let videoSettings: [String: Any] = [
                 AVVideoCodecKey: AVVideoCodecType.h264,
                 AVVideoWidthKey: width,
                 AVVideoHeightKey: height,
                 AVVideoCompressionPropertiesKey: [
-                    AVVideoAverageBitRateKey: bitrate,
+                    AVVideoAverageBitRateKey: finalBitrate,
+                    AVVideoMaxKeyFrameIntervalKey: fps * 2, 
                     AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-                    AVVideoH264EntropyModeKey: AVVideoH264EntropyModeCABAC
+                    AVVideoH264EntropyModeKey: AVVideoH264EntropyModeCABAC,
+                    AVVideoQualityKey: 0.85,
+                    AVVideoExpectedSourceFrameRateKey: fps,
+                    AVVideoAllowFrameReorderingKey: false
                 ]
             ]
             
@@ -95,14 +147,170 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
                 assetWriter!.add(videoInput!)
             }
             
+            // Setup audio if enabled
+            if recordAudio {
+                setupAudioRecording()
+            }
+            
             assetWriter!.startWriting()
             assetWriter!.startSession(atSourceTime: CMTime.zero)
             
             isRunning = true
             frameCount = 0
+            audioSampleCount = 0
+            
+            // Start audio engine if enabled
+            if recordAudio {
+                startAudioRecording()
+            }
         } catch {
             print("Error starting encoding: \(error)")
         }
+    }
+    
+    private func setupAudioRecording() {
+        let audioSettings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 44100.0,
+            AVNumberOfChannelsKey: 2,
+            AVEncoderBitRateKey: 128000
+        ]
+        
+        audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
+        audioInput?.expectsMediaDataInRealTime = true
+        
+        if assetWriter!.canAdd(audioInput!) {
+            assetWriter!.add(audioInput!)
+        }
+    }
+    
+    private func startAudioRecording() {
+        audioEngine = AVAudioEngine()
+        guard let audioEngine = audioEngine else { return }
+        
+        let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        
+        // Convert to stereo 44.1kHz format for AAC encoding
+        let outputFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 44100.0,
+            channels: 2,
+            interleaved: false
+        )
+        
+        guard let outputFormat = outputFormat else { return }
+        
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { [weak self] (buffer, time) in
+            guard let self = self, self.isRunning else { return }
+            
+            self.audioQueue.async {
+                // Convert to output format if needed
+                let converter = AVAudioConverter(from: recordingFormat, to: outputFormat)
+                guard let converter = converter else { return }
+                
+                let capacity = AVAudioFrameCount(outputFormat.sampleRate) * buffer.frameLength / AVAudioFrameCount(recordingFormat.sampleRate)
+                guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity) else { return }
+                
+                var error: NSError?
+                converter.convert(to: convertedBuffer, error: &error) { _, outStatus in
+                    outStatus.pointee = .haveData
+                    return buffer
+                }
+                
+                if error == nil {
+                    self.appendAudioBuffer(convertedBuffer)
+                }
+            }
+        }
+        
+        do {
+            try audioEngine.start()
+        } catch {
+            print("Error starting audio engine: \(error)")
+        }
+    }
+    
+    private func appendAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+        guard let audioInput = audioInput, audioInput.isReadyForMoreMediaData else { return }
+        
+        let sampleTime = CMTimeMake(value: audioSampleCount, timescale: 44100)
+        
+        guard let blockBuffer = createBlockBuffer(from: buffer) else { return }
+        
+        var formatDescription: CMAudioFormatDescription?
+        CMAudioFormatDescriptionCreate(
+            allocator: kCFAllocatorDefault,
+            asbd: buffer.format.streamDescription,
+            layoutSize: 0,
+            layout: nil,
+            magicCookieSize: 0,
+            magicCookie: nil,
+            extensions: nil,
+            formatDescriptionOut: &formatDescription
+        )
+        
+        guard let formatDescription = formatDescription else { return }
+        
+        var sampleBuffer: CMSampleBuffer?
+        CMAudioSampleBufferCreateWithPacketDescriptions(
+            allocator: kCFAllocatorDefault,
+            dataBuffer: blockBuffer,
+            dataReady: true,
+            makeDataReadyCallback: nil,
+            refcon: nil,
+            formatDescription: formatDescription,
+            sampleCount: CMItemCount(buffer.frameLength),
+            presentationTimeStamp: sampleTime,
+            packetDescriptions: nil,
+            sampleBufferOut: &sampleBuffer
+        )
+        
+        if let sampleBuffer = sampleBuffer {
+            audioInput.append(sampleBuffer)
+            audioSampleCount += Int64(buffer.frameLength)
+        }
+    }
+    
+    private func createBlockBuffer(from buffer: AVAudioPCMBuffer) -> CMBlockBuffer? {
+        let audioBufferList = buffer.audioBufferList.pointee
+        let channels = Int(audioBufferList.mNumberBuffers)
+        
+        guard channels > 0 else { return nil }
+        
+        let bufferSize = Int(audioBufferList.mBuffers.mDataByteSize) * channels
+        var blockBuffer: CMBlockBuffer?
+        
+        let status = CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault,
+            memoryBlock: nil,
+            blockLength: bufferSize,
+            blockAllocator: kCFAllocatorDefault,
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: bufferSize,
+            flags: 0,
+            blockBufferOut: &blockBuffer
+        )
+        
+        guard status == kCMBlockBufferNoErr, let blockBuffer = blockBuffer else { return nil }
+        
+        // Copy audio data
+        for i in 0..<channels {
+            let audioBuffer = UnsafeBufferPointer<UInt8>(
+                start: audioBufferList.mBuffers.mData?.assumingMemoryBound(to: UInt8.self),
+                count: Int(audioBufferList.mBuffers.mDataByteSize)
+            )
+            
+            CMBlockBufferReplaceDataBytes(
+                with: audioBuffer.baseAddress!,
+                blockBuffer: blockBuffer,
+                offsetIntoDestination: i * Int(audioBufferList.mBuffers.mDataByteSize),
+                dataLength: Int(audioBufferList.mBuffers.mDataByteSize)
+            )
+        }
+        
+        return blockBuffer
     }
 
     private func addFrame(frameBytes: Data) {
@@ -154,6 +362,13 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
     private func stopEncodingSync() {
         let semaphore = DispatchSemaphore(value: 0)
         
+        // Stop audio engine first
+        if recordAudio {
+            audioEngine?.stop()
+            audioEngine?.inputNode.removeTap(onBus: 0)
+            audioEngine = nil
+        }
+        
         queue.async { [weak self] in
             guard let self = self else {
                 semaphore.signal()
@@ -162,6 +377,7 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
             
             self.isRunning = false
             self.videoInput?.markAsFinished()
+            self.audioInput?.markAsFinished()
             
             let endTime = CMTimeMake(value: self.frameCount, timescale: Int32(self.fps))
             self.assetWriter?.endSession(atSourceTime: endTime)
@@ -172,6 +388,7 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
                 }
                 self.assetWriter = nil
                 self.videoInput = nil
+                self.audioInput = nil
                 self.pixelBufferAdaptor = nil
                 semaphore.signal()
             }
@@ -185,11 +402,19 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
     }
 
     private func stopEncoding() {
+        // Stop audio engine first
+        if recordAudio {
+            audioEngine?.stop()
+            audioEngine?.inputNode.removeTap(onBus: 0)
+            audioEngine = nil
+        }
+        
         queue.async { [weak self] in
             guard let self = self else { return }
             
             self.isRunning = false
             self.videoInput?.markAsFinished()
+            self.audioInput?.markAsFinished()
             
             let endTime = CMTimeMake(value: self.frameCount, timescale: Int32(self.fps))
             self.assetWriter?.endSession(atSourceTime: endTime)
@@ -200,6 +425,7 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
                 }
                 self.assetWriter = nil
                 self.videoInput = nil
+                self.audioInput = nil
                 self.pixelBufferAdaptor = nil
             }
         }
