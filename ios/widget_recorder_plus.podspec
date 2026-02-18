@@ -1,17 +1,18 @@
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint widget_recorder.podspec` to validate before publishing.
+# Run `pod lib lint widget_recorder_plus.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'widget_recorder'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.name             = 'widget_recorder_plus'
+  s.version          = '1.0.2'
+  s.summary          = 'Record any Flutter widget as MP4 video with audio'
   s.description      = <<-DESC
-A new Flutter plugin project.
+A powerful Flutter package to record any widget as a high-quality MP4 video with optional audio recording.
+Features automatic permission handling, simple 3-line API, and high-quality H.264 encoding.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/abdulhadinaeem/widget-recoding-plugin'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Abdul Hadi Naeem' => 'abdulhadinaeem@gmail.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
@@ -25,5 +26,5 @@ A new Flutter plugin project.
   # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your
   # plugin's privacy impact, and then uncomment this line. For more information,
   # see https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
-  # s.resource_bundles = {'widget_recorder_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
+  # s.resource_bundles = {'widget_recorder_plus_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
 end

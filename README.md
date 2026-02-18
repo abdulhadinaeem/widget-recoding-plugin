@@ -23,7 +23,8 @@ A powerful Flutter package to record any widget as a high-quality MP4 video. Per
 - Cross-Platform - Android (API 21+) and iOS (13+)
 - Auto File Management - No path management needed
 - Built-in Callbacks - Success and error handling
-- High Quality - Native H.264 codec with 10 Mbps/megapixel bitrate
+- High Quality - Native H.264 video codec with optimized bitrate
+- AAC Audio - High-quality 128kbps stereo audio encoding
 - Smooth Encoding - Optimized for performance
 - Proper Finalization - Ensures video files are always valid
 

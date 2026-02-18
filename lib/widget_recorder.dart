@@ -28,7 +28,7 @@ class WidgetRecorderController {
   Size? _size;
   BuildContext? _context;
 
-  /// Set frames per second (default: 30)
+  /// Set frames per second (default: 60)
   set fps(int value) => _fps = value;
 
   /// Internal method to set context for permission dialogs
@@ -163,6 +163,7 @@ class WidgetRecorderController {
         'height': validHeight,
         'fps': _fps,
         'outputPath': _outputPath,
+        'recordAudio': recordAudio,
       });
 
       _timer = Timer.periodic(
@@ -209,20 +210,18 @@ class WidgetRecorderController {
       if (renderObject == null) return;
 
       final boundary = renderObject as RenderRepaintBoundary;
-      // Capture at 2x pixel ratio for better quality
-      final image = await boundary.toImage(pixelRatio: 2.0);
-
-      // Resize image to match encoded dimensions if needed
+      
+      // Calculate exact dimensions
       final validWidth = (_size!.width.toInt() ~/ 16) * 16;
-      final validHeight = (_size!.height.toInt() ~/ 16) * 16;
-
-      ui.Image resizedImage = image;
-      if (image.width != validWidth || image.height != validHeight) {
-        resizedImage = await _resizeImage(image, validWidth, validHeight);
-      }
+      
+      // Use pixel ratio that matches target dimensions exactly
+      final pixelRatio = validWidth / _size!.width;
+      
+      // Capture at calculated pixel ratio for optimal quality
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
 
       final byteData =
-          await resizedImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
 
       if (byteData != null) {
         await _channel.invokeMethod('addFrame', {
@@ -233,23 +232,6 @@ class WidgetRecorderController {
       debugPrint('[WidgetRecorder] ❌ Error capturing frame: $e');
       _handleError(e.toString());
     }
-  }
-
-  Future<ui.Image> _resizeImage(ui.Image image, int width, int height) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(
-        recorder, Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()));
-
-    // Draw the image scaled to fit the target dimensions
-    canvas.drawImageRect(
-      image,
-      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-      ui.Paint(),
-    );
-
-    final picture = recorder.endRecording();
-    return picture.toImage(width, height);
   }
 
   void _handleError(String error) {

@@ -22,6 +22,15 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "checkPermission":
+            checkMicrophonePermission(result: result)
+            
+        case "requestPermission":
+            requestMicrophonePermission(result: result)
+            
+        case "openSettings":
+            openAppSettings(result: result)
+            
         case "startRecording":
             guard let args = call.arguments as? [String: Any] else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
@@ -49,6 +58,33 @@ public class WidgetRecorderPlugin: NSObject, FlutterPlugin {
             
         default:
             result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    private func checkMicrophonePermission(result: @escaping FlutterResult) {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        result(status == .authorized)
+    }
+    
+    private func requestMicrophonePermission(result: @escaping FlutterResult) {
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
+            DispatchQueue.main.async {
+                result(granted)
+            }
+        }
+    }
+    
+    private func openAppSettings(result: @escaping FlutterResult) {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:]) { success in
+                    result(success)
+                }
+            } else {
+                result(false)
+            }
+        } else {
+            result(false)
         }
     }
 
