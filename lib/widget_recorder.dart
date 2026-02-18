@@ -81,11 +81,6 @@ class WidgetRecorderController {
       final int validWidth = (_size!.width.toInt() ~/ 16) * 16;
       final int validHeight = (_size!.height.toInt() ~/ 16) * 16;
 
-      // Calculate pixel ratio to maintain quality while matching target dimensions
-      final double pixelRatioWidth = validWidth / _size!.width;
-      final double pixelRatioHeight = validHeight / _size!.height;
-      final double optimalPixelRatio = (pixelRatioWidth + pixelRatioHeight) / 2;
-
       await _channel.invokeMethod('startRecording', {
         'width': validWidth,
         'height': validHeight,
@@ -131,7 +126,6 @@ class WidgetRecorderController {
       
       // Calculate exact dimensions
       final validWidth = (_size!.width.toInt() ~/ 16) * 16;
-      final validHeight = (_size!.height.toInt() ~/ 16) * 16;
       
       // Use pixel ratio that matches target dimensions exactly
       final pixelRatio = validWidth / _size!.width;
