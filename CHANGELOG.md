@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.3
+
+### 🐛 Critical Bug Fix - Frame Size Mismatch
+
+#### Issue Resolved
+- **Fixed:** Frame data size mismatch error causing recording failures
+- **Error:** `Error: Frame data size mismatch. Expected: 3812352, Got: 3793664`
+- **Impact:** Resolves orientation-specific recording issues on iOS/iPad devices
+
+#### Root Cause
+- Pixel ratio calculation was causing size mismatches between Dart and native layers
+- Different orientations produced different dimension rounding
+- iPad vs iPhone had inconsistent behavior
+
+#### Solution
+- Changed to 1.0 pixel ratio capture for exact dimension matching
+- Added frame size validation before sending to native layer
+- Added image resizing when dimensions don't match encoder expectations
+- Proper image disposal to prevent memory leaks
+
+#### Technical Changes
+
+**Dart Layer (lib/widget_recorder.dart):**
+- Changed from calculated pixel ratio to fixed 1.0 pixel ratio
+- Added `_resizeImage()` method for dimension correction
+- Added frame size validation with clear error messages
+- Added proper image disposal to prevent memory leaks
+- Added bounds checking before sending data
+
+**Android Layer (WidgetRecorderPlugin.kt):**
+- Added frame data size validation before encoding
+- Enhanced error logging with detailed messages
+- Better logging for input buffer availability
+- Improved exception handling
+
+**iOS Layer (WidgetRecorderPlugin.swift):**
+- Frame size validation already present in 1.0.2
+- Bounds checking already implemented
+
+#### Tested Scenarios
+- ✅ Portrait and landscape orientations
+- ✅ iPad and iPhone devices
+- ✅ Various widget dimensions
+- ✅ ExtendBodyBehindAppBar configurations
+- ✅ Camera preview recording
+- ✅ Long recording sessions
+
+#### Documentation
+- Added TROUBLESHOOTING.md with comprehensive solutions
+- Added frame size mismatch troubleshooting guide
+- Added orientation-specific issue resolution
+- Added best practices for dimension handling
+
+#### Special Thanks
+- Thanks to **Martijn Molder** for the detailed bug report!
+
+---
+
 ## 1.0.2
 
 ### 🚀 Automatic Permission Handling & Camera Recording

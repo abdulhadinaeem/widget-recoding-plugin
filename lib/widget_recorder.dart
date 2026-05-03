@@ -10,7 +10,8 @@ class WidgetRecorderController {
   final Function(String path)? onComplete;
   final Function(String error)? onError;
   final bool recordAudio;
-  final Widget Function(BuildContext context, VoidCallback openSettings)? permissionDeniedDialog;
+  final Widget Function(BuildContext context, VoidCallback openSettings)?
+      permissionDeniedDialog;
 
   WidgetRecorderController({
     this.onComplete,
@@ -88,7 +89,7 @@ class WidgetRecorderController {
           if (permissionDeniedDialog != null) {
             return permissionDeniedDialog!(context, openSettings);
           }
-          
+
           // Default dialog
           return AlertDialog(
             title: const Text('Microphone Permission Required'),
@@ -139,7 +140,7 @@ class WidgetRecorderController {
 
     try {
       debugPrint('[WidgetRecorder] 🎬 Starting recording...');
-      
+
       // Get temporary directory and create output path
       final dir = await getTemporaryDirectory();
       _outputPath =
@@ -155,8 +156,9 @@ class WidgetRecorderController {
       // Round dimensions down to the nearest multiple of 16 for perfect encoding
       final int validWidth = (_size!.width.toInt() ~/ 16) * 16;
       final int validHeight = (_size!.height.toInt() ~/ 16) * 16;
-      
-      debugPrint('[WidgetRecorder] 📐 Recording: ${validWidth}x$validHeight @ $_fps fps (Audio: $recordAudio)');
+
+      debugPrint(
+          '[WidgetRecorder] 📐 Recording: ${validWidth}x$validHeight @ $_fps fps (Audio: $recordAudio)');
 
       await _channel.invokeMethod('startRecording', {
         'width': validWidth,
@@ -170,7 +172,7 @@ class WidgetRecorderController {
         Duration(milliseconds: 1000 ~/ _fps),
         (_) => _captureFrame(),
       );
-      
+
       debugPrint('[WidgetRecorder] ✅ Recording started');
     } catch (e) {
       debugPrint('[WidgetRecorder] ❌ Error starting: $e');
@@ -184,7 +186,7 @@ class WidgetRecorderController {
       debugPrint('[WidgetRecorder] ⚠️ Not recording');
       return null;
     }
-    
+
     debugPrint('[WidgetRecorder] ⏹️ Stopping recording...');
     _isRecording = false;
     _timer?.cancel();
@@ -210,28 +212,66 @@ class WidgetRecorderController {
       if (renderObject == null) return;
 
       final boundary = renderObject as RenderRepaintBoundary;
-      
-      // Calculate exact dimensions
+
+      // Calculate the exact dimensions we need (rounded to multiples of 16)
       final validWidth = (_size!.width.toInt() ~/ 16) * 16;
-      
-      // Use pixel ratio that matches target dimensions exactly
-      final pixelRatio = validWidth / _size!.width;
-      
-      // Capture at calculated pixel ratio for optimal quality
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      final validHeight = (_size!.height.toInt() ~/ 16) * 16;
+
+      // Capture at 1.0 pixel ratio to match encoder dimensions exactly
+      // This prevents size mismatches between Dart and native layers
+      final image = await boundary.toImage(pixelRatio: 1.0);
+
+      // Resize only if the captured size doesn't match encoder dimensions
+      ui.Image finalImage = image;
+      if (image.width != validWidth || image.height != validHeight) {
+        finalImage = await _resizeImage(image, validWidth, validHeight);
+      }
 
       final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+          await finalImage.toByteData(format: ui.ImageByteFormat.rawRgba);
 
       if (byteData != null) {
+        final frameData = byteData.buffer.asUint8List();
+        final expectedSize =
+            validWidth * validHeight * 4; // RGBA = 4 bytes per pixel
+
+        // Verify frame data size matches expectations
+        if (frameData.length != expectedSize) {
+          throw Exception(
+              'Frame data size mismatch. Expected: $expectedSize, Got: ${frameData.length}');
+        }
+
         await _channel.invokeMethod('addFrame', {
-          'frame': byteData.buffer.asUint8List(),
+          'frame': frameData,
         });
+      }
+
+      // Clean up images to prevent memory leaks
+      finalImage.dispose();
+      if (finalImage != image) {
+        image.dispose();
       }
     } catch (e) {
       debugPrint('[WidgetRecorder] ❌ Error capturing frame: $e');
       _handleError(e.toString());
     }
+  }
+
+  Future<ui.Image> _resizeImage(ui.Image image, int width, int height) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(
+        recorder, Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()));
+
+    // Draw the image scaled to fit the target dimensions
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+      ui.Paint(),
+    );
+
+    final picture = recorder.endRecording();
+    return picture.toImage(width, height);
   }
 
   void _handleError(String error) {

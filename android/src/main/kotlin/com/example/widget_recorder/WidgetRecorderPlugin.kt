@@ -89,6 +89,13 @@ class WidgetRecorderPlugin : FlutterPlugin, MethodCallHandler {
         handler?.post {
             val currentEncoder = encoder ?: return@post
             try {
+                // Validate frame data size
+                val expectedSize = width * height * 4 // RGBA = 4 bytes per pixel
+                if (rgba.size != expectedSize) {
+                    android.util.Log.e("WidgetRecorder", "Frame data size mismatch. Expected: $expectedSize, Got: ${rgba.size}")
+                    return@post
+                }
+                
                 val index = currentEncoder.dequeueInputBuffer(5000)
                 if (index >= 0) {
                     // This is the key: Accessing the Image object gives us the rowStride
@@ -98,10 +105,15 @@ class WidgetRecorderPlugin : FlutterPlugin, MethodCallHandler {
                         val presentationTimeUs = (frameCount * 1_000_000L) / fps
                         currentEncoder.queueInputBuffer(index, 0, (width * height * 1.5).toInt(), presentationTimeUs, 0)
                         frameCount++
+                    } else {
+                        android.util.Log.e("WidgetRecorder", "Failed to get input image at index $index")
                     }
+                } else {
+                    android.util.Log.w("WidgetRecorder", "No input buffer available (index: $index)")
                 }
                 drainEncoder(false)
             } catch (e: Exception) {
+                android.util.Log.e("WidgetRecorder", "Error adding frame: ${e.message}", e)
                 e.printStackTrace()
             }
         }
