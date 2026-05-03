@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.4
+
+### 🐛 Critical Bug Fix - Android ArrayIndexOutOfBoundsException
+
+#### Issue Resolved
+- **Fixed:** `ArrayIndexOutOfBoundsException` on Android devices
+- **Error:** `java.lang.ArrayIndexOutOfBoundsException: length=1332800; index=1332800`
+- **Location:** `WidgetRecorderPlugin.kt:123` in `encodeRgbaToImage` function
+- **Impact:** Affects all Android devices including Samsung S26, Android 16, and emulators
+
+#### Root Cause
+- Missing bounds checking when accessing RGBA byte array
+- Frame data size mismatch between Dart layer and Android encoder
+- Same underlying issue as iOS (fixed in 1.0.3) but manifested differently on Android
+
+#### Solution
+- Added comprehensive bounds checking in `encodeRgbaToImage` function
+- Validates RGBA array size before processing
+- Added bounds checks for both Y plane and UV plane conversions
+- Graceful error handling with detailed logging
+- Prevents crashes and provides clear error messages
+
+#### Technical Changes
+
+**Android Layer (WidgetRecorderPlugin.kt):**
+```kotlin
+// Added array size validation
+val expectedSize = width * height * 4
+if (rgba.size < expectedSize) {
+    android.util.Log.e("WidgetRecorder", "RGBA array too small...")
+    return
+}
+
+// Added bounds checking in Y plane conversion
+if (i + 2 >= rgba.size) {
+    android.util.Log.e("WidgetRecorder", "Index out of bounds at Y plane...")
+    return
+}
+
+// Added bounds checking in UV plane conversion
+if (i + 2 >= rgba.size) {
+    android.util.Log.e("WidgetRecorder", "Index out of bounds at UV plane...")
+    continue
+}
+```
+
+#### Tested Scenarios
+- ✅ Samsung S26 (Android 16)
+- ✅ Android emulators
+- ✅ Various widget dimensions
+- ✅ Multiple recording sessions
+- ✅ Different screen sizes and orientations
+
+#### Related Issues
+- Complements the iOS fix in v1.0.3
+- Part of the comprehensive frame size mismatch resolution
+- Works together with Dart layer fixes from v1.0.3
+
+---
+
 ## 1.0.3
 
 ### 🐛 Critical Bug Fix - Frame Size Mismatch

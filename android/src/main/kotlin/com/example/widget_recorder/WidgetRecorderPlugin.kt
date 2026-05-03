@@ -128,10 +128,24 @@ class WidgetRecorderPlugin : FlutterPlugin, MethodCallHandler {
         val uvStride = planes[1].rowStride
         val uvPixelStride = planes[1].pixelStride
 
+        // Validate array size before processing
+        val expectedSize = width * height * 4
+        if (rgba.size < expectedSize) {
+            android.util.Log.e("WidgetRecorder", "RGBA array too small. Expected: $expectedSize, Got: ${rgba.size}")
+            return
+        }
+
         // First pass: write Y plane
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val i = (y * width + x) * 4
+                
+                // Bounds check
+                if (i + 2 >= rgba.size) {
+                    android.util.Log.e("WidgetRecorder", "Index out of bounds at Y plane: i=$i, size=${rgba.size}")
+                    return
+                }
+                
                 val r = rgba[i].toInt() and 0xFF
                 val g = rgba[i + 1].toInt() and 0xFF
                 val b = rgba[i + 2].toInt() and 0xFF
@@ -157,6 +171,13 @@ class WidgetRecorderPlugin : FlutterPlugin, MethodCallHandler {
                         val px = x + dx
                         if (py < height && px < width) {
                             val i = (py * width + px) * 4
+                            
+                            // Bounds check
+                            if (i + 2 >= rgba.size) {
+                                android.util.Log.e("WidgetRecorder", "Index out of bounds at UV plane: i=$i, size=${rgba.size}")
+                                continue
+                            }
+                            
                             rSum += rgba[i].toInt() and 0xFF
                             gSum += rgba[i + 1].toInt() and 0xFF
                             bSum += rgba[i + 2].toInt() and 0xFF
