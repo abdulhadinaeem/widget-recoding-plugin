@@ -19,24 +19,24 @@ A powerful Flutter package to record any widget as MP4 video, animated GIF, or h
 - **MP4 Video Export** - High-quality H.264 video codec with optimized bitrate
 - **Audio Recording** - Optional microphone audio capture (iOS & Android)
 - **Automatic Permissions** - Built-in permission handling with customizable dialogs
-- **Video Quality Presets** - Low (15 FPS, 2 Mbps), Medium (30 FPS, 5 Mbps), High (60 FPS, 10 Mbps) (NEW v1.1.0)
-- **Countdown Timer** - 3-2-1 countdown before recording starts (NEW v1.1.0)
-- **Custom Save Path** - Save to custom directories (NEW v1.1.0)
+- **Video Quality Presets** - Low (15 FPS, 2 Mbps), Medium (30 FPS, 5 Mbps), High (60 FPS, 10 Mbps) (NEW v1.0.5)
+- **Countdown Timer** - 3-2-1 countdown before recording starts (NEW v1.0.5)
+- **Custom Save Path** - Save to custom directories (NEW v1.0.5)
 - **Configurable FPS** - 15-60 FPS (default 60)
 - **Proper Finalization** - Ensures video files are always valid
 
-### 📸 Screenshot Capture (NEW v1.1.0)
+### 📸 Screenshot Capture (NEW v1.0.5)
 - **High-Quality Screenshots** - PNG/JPG export with configurable resolution
 - **Retina Support** - Adjustable pixel ratio for ultra-high-res captures
 - **Instant Capture** - Single-frame screenshot with one method call
 
-### 🎞️ GIF Export (NEW v1.1.0)
+### 🎞️ GIF Export (NEW v1.0.5)
 - **Animated GIFs** - Export widgets as shareable GIF files
 - **Quality Presets** - Low, Medium, High (10-24 FPS, 64-256 colors)
 - **Auto or Manual** - Timed recording or manual start/stop control
 - **Optimized Encoding** - Color quantization for smaller file sizes
 
-### 👆 Touch Visualization (NEW v1.1.0)
+### 👆 Touch Visualization (NEW v1.0.5)
 - **Touch Indicators** - Show touch points during recording
 - **Ripple Effects** - Animated ripples on tap with customizable colors
 - **Fully Customizable** - Size, color, opacity, and animation duration
@@ -66,7 +66,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  widget_recorder_plus: ^1.1.0
+  widget_recorder_plus: ^1.0.5
 ```
 
 Then run:
@@ -116,7 +116,7 @@ await controller.start();
 final videoPath = await controller.stop();
 ```
 
-**With Countdown (NEW v1.1.0):**
+**With Countdown (NEW v1.0.5):**
 ```dart
 // Start with 3-second countdown
 await controller.startWithCountdown(
@@ -125,7 +125,7 @@ await controller.startWithCountdown(
 );
 ```
 
-**With Quality Preset (NEW v1.1.0):**
+**With Quality Preset (NEW v1.0.5):**
 ```dart
 // Apply quality preset before recording
 controller.applyVideoQuality(VideoQuality.high); // 60 FPS, 10 Mbps
@@ -134,7 +134,7 @@ await controller.start();
 
 ---
 
-## 🎯 Video Quality Presets (NEW v1.1.0)
+## 🎯 Video Quality Presets (NEW v1.0.5)
 
 Choose from predefined quality presets for optimal balance between file size and quality:
 
@@ -162,7 +162,7 @@ await controller.start();
 
 ---
 
-## ⏱️ Countdown Timer (NEW v1.1.0)
+## ⏱️ Countdown Timer (NEW v1.0.5)
 
 Give yourself time to prepare before recording starts:
 
@@ -204,7 +204,7 @@ Text('Recording in: $countdownValue', style: TextStyle(fontSize: 48));
 
 ---
 
-## 📁 Custom Save Path (NEW v1.1.0)
+## 📁 Custom Save Path (NEW v1.0.5)
 
 Save recordings to custom locations instead of temp directory:
 
@@ -497,9 +497,9 @@ WidgetRecorderController({
   Function(String error)? onError,
   bool recordAudio = false,
   Widget Function(BuildContext context, VoidCallback openSettings)? permissionDeniedDialog,
-  bool showTouches = false,  // NEW v1.1.0
-  TouchVisualizationConfig touchConfig = const TouchVisualizationConfig(),  // NEW v1.1.0
-  String? customSavePath,  // NEW v1.1.0
+  bool showTouches = false,  // NEW v1.0.5
+  TouchVisualizationConfig touchConfig = const TouchVisualizationConfig(),  // NEW v1.0.5
+  String? customSavePath,  // NEW v1.0.5
 })
 ```
 
@@ -508,9 +508,9 @@ WidgetRecorderController({
 - `onError` - Called when an error occurs
 - `recordAudio` - Enable microphone audio recording (default: false)
 - `permissionDeniedDialog` - Optional custom dialog when permission is denied
-- `showTouches` - Enable touch visualization (default: false) **NEW v1.1.0**
-- `touchConfig` - Touch indicator configuration **NEW v1.1.0**
-- `customSavePath` - Custom directory for saving files (optional) **NEW v1.1.0**
+- `showTouches` - Enable touch visualization (default: false) **NEW v1.0.5**
+- `touchConfig` - Touch indicator configuration **NEW v1.0.5**
+- `customSavePath` - Custom directory for saving files (optional) **NEW v1.0.5**
 
 #### Properties
 
@@ -518,14 +518,14 @@ WidgetRecorderController({
 // Set frames per second for video recording (15-60, default: 60)
 controller.fps = 30;
 
-// Apply video quality preset (NEW v1.1.0)
+// Apply video quality preset (NEW v1.0.5)
 controller.applyVideoQuality(VideoQuality.medium);
 
 // Check if currently recording video or GIF
 bool isRecording = controller.isRecording;
 
 // Check if currently recording GIF specifically
-bool isRecordingGif = controller.isRecordingGif;  // NEW v1.1.0
+bool isRecordingGif = controller.isRecordingGif;  // NEW v1.0.5
 ```
 
 #### Video Recording Methods
@@ -534,13 +534,13 @@ bool isRecordingGif = controller.isRecordingGif;  // NEW v1.1.0
 // Start video recording (auto-generates file path)
 await controller.start();
 
-// Start with countdown (NEW v1.1.0)
+// Start with countdown (NEW v1.0.5)
 await controller.startWithCountdown(
   countdownSeconds: 3,
   onTick: (remaining) => print('Starting in $remaining'),
 );
 
-// Start with custom countdown duration (NEW v1.1.0)
+// Start with custom countdown duration (NEW v1.0.5)
 await controller.start(
   countdown: Duration(seconds: 5),
   onTick: (remaining) => print('$remaining'),
@@ -550,7 +550,7 @@ await controller.start(
 final path = await controller.stop();
 ```
 
-#### Screenshot Methods (NEW v1.1.0)
+#### Screenshot Methods (NEW v1.0.5)
 
 ```dart
 // Capture high-quality screenshot
@@ -561,7 +561,7 @@ final screenshotPath = await controller.captureScreenshot(
 );
 ```
 
-#### GIF Export Methods (NEW v1.1.0)
+#### GIF Export Methods (NEW v1.0.5)
 
 ```dart
 // Automatic timed GIF recording
@@ -608,7 +608,7 @@ WidgetRecorder(
 )
 ```
 
-### TouchVisualizationConfig (NEW v1.1.0)
+### TouchVisualizationConfig (NEW v1.0.5)
 
 Configuration for touch visualization during recording.
 
@@ -629,7 +629,7 @@ const TouchVisualizationConfig({
 - `showRipple` - Enable ripple animation effect
 - `rippleDuration` - Duration of ripple animation
 
-### ImageFormat Enum (NEW v1.1.0)
+### ImageFormat Enum (NEW v1.0.5)
 
 ```dart
 enum ImageFormat {
@@ -638,7 +638,7 @@ enum ImageFormat {
 }
 ```
 
-### VideoQuality Enum (NEW v1.1.0)
+### VideoQuality Enum (NEW v1.0.5)
 
 ```dart
 enum VideoQuality {
@@ -1040,7 +1040,7 @@ Solution: Ensure Swift support is enabled. Update iOS deployment target to 13.0+
 | Audio | AAC (optional, 128kbps stereo) |
 | Color Space | YUV420 (Android), BGRA (iOS) |
 
-### Screenshot (NEW v1.1.0)
+### Screenshot (NEW v1.0.5)
 
 | Property | Value |
 |----------|-------|
@@ -1050,7 +1050,7 @@ Solution: Ensure Swift support is enabled. Update iOS deployment target to 13.0+
 | Color Depth | 32-bit RGBA |
 | Compression | PNG: lossless, JPG: configurable 1-100 |
 
-### GIF (NEW v1.1.0)
+### GIF (NEW v1.0.5)
 
 | Preset | FPS | Colors | Typical Size | Best For |
 |--------|-----|--------|--------------|----------|
@@ -1083,7 +1083,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Changelog
 
-### Version 1.1.0 (Latest)
+### Version 1.0.5 (Latest)
 
 **New Features:**
 - ✨ **Screenshot Capture** - Capture high-quality PNG/JPG screenshots with configurable resolution

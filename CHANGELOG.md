@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.1.0 - NEW FEATURES RELEASE 🎉
+## 1.0.5 - NEW FEATURES RELEASE 🎉
 
 ### ✨ New Features
 

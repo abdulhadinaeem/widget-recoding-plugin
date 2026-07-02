@@ -118,7 +118,8 @@ class WidgetRecorderController {
   void applyVideoQuality(VideoQuality quality) {
     _fps = quality.fps;
     _customBitrate = quality.bitrate;
-    debugPrint('[WidgetRecorder] 📊 Applied ${quality.description}');
+    debugPrint('[WidgetRecorder] 📊 Applied video quality preset: ${quality.description}');
+    debugPrint('[WidgetRecorder] 📊   └─ FPS: $_fps, Bitrate: $_customBitrate');
   }
 
   /// Internal method to set context for permission dialogs
@@ -217,30 +218,33 @@ class WidgetRecorderController {
     Function(int remainingSeconds)? onTick,
   }) async {
     if (_isRecording) {
-      debugPrint('[WidgetRecorder] ⚠️ Already recording');
+      debugPrint('[WidgetRecorder] ⚠️ Already recording - ignoring start request');
       return;
     }
 
     // Handle countdown if specified
     if (countdown != null && countdown.inSeconds > 0) {
-      debugPrint('[WidgetRecorder] ⏳ Starting countdown: ${countdown.inSeconds}s');
+      debugPrint('[WidgetRecorder] ⏳ Starting countdown: ${countdown.inSeconds} seconds');
       
       for (int i = countdown.inSeconds; i > 0; i--) {
+        debugPrint('[WidgetRecorder] ⏳   └─ Countdown: $i...');
         onTick?.call(i);
         await Future.delayed(const Duration(seconds: 1));
       }
       
-      debugPrint('[WidgetRecorder] ✅ Countdown complete');
+      debugPrint('[WidgetRecorder] ✅ Countdown complete - starting recording');
     }
 
     // Handle permission automatically if audio recording is enabled
     if (recordAudio) {
+      debugPrint('[WidgetRecorder] 🎤 Audio recording enabled - checking permissions');
       final hasPermission = await _handlePermission();
       if (!hasPermission) {
-        debugPrint('[WidgetRecorder] ❌ Permission denied');
+        debugPrint('[WidgetRecorder] ❌ Microphone permission denied');
         _handleError('Microphone permission denied');
         return;
       }
+      debugPrint('[WidgetRecorder] ✅ Microphone permission granted');
     }
 
     _isRecording = true;
@@ -251,16 +255,23 @@ class WidgetRecorderController {
       // Get output directory
       final Directory dir;
       if (customSavePath != null) {
+        debugPrint('[WidgetRecorder] 📁 Using custom save path: $customSavePath');
         dir = Directory(customSavePath!);
         // Create directory if it doesn't exist
         if (!await dir.exists()) {
+          debugPrint('[WidgetRecorder] 📁   └─ Creating directory...');
           await dir.create(recursive: true);
+          debugPrint('[WidgetRecorder] ✅   └─ Directory created');
+        } else {
+          debugPrint('[WidgetRecorder] ✅   └─ Directory exists');
         }
       } else {
+        debugPrint('[WidgetRecorder] 📁 Using temporary directory');
         dir = await getTemporaryDirectory();
       }
       
       _outputPath = '${dir.path}/widget_rec_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      debugPrint('[WidgetRecorder] 📁 Output path: $_outputPath');
 
       final renderObject = _boundaryKey.currentContext?.findRenderObject();
       if (renderObject == null) {
@@ -273,8 +284,13 @@ class WidgetRecorderController {
       final int validWidth = (_size!.width.toInt() ~/ 16) * 16;
       final int validHeight = (_size!.height.toInt() ~/ 16) * 16;
 
-      debugPrint(
-          '[WidgetRecorder] 📐 Recording: ${validWidth}x$validHeight @ $_fps fps (Audio: $recordAudio)');
+      debugPrint('[WidgetRecorder] 📐 Recording configuration:');
+      debugPrint('[WidgetRecorder] 📐   ├─ Resolution: ${validWidth}x$validHeight');
+      debugPrint('[WidgetRecorder] 📐   ├─ FPS: $_fps');
+      debugPrint('[WidgetRecorder] 📐   ├─ Audio: ${recordAudio ? "enabled" : "disabled"}');
+      if (_customBitrate != null) {
+        debugPrint('[WidgetRecorder] 📐   └─ Custom bitrate: ${(_customBitrate! / 1000000).toStringAsFixed(1)} Mbps');
+      }
 
       await _channel.invokeMethod('startRecording', {
         'width': validWidth,
@@ -290,9 +306,9 @@ class WidgetRecorderController {
         (_) => _captureFrame(),
       );
 
-      debugPrint('[WidgetRecorder] ✅ Recording started');
+      debugPrint('[WidgetRecorder] ✅ Recording started successfully');
     } catch (e) {
-      debugPrint('[WidgetRecorder] ❌ Error starting: $e');
+      debugPrint('[WidgetRecorder] ❌ Error starting recording: $e');
       _handleError(e.toString());
     }
   }
@@ -307,6 +323,7 @@ class WidgetRecorderController {
     int countdownSeconds = 3,
     Function(int remainingSeconds)? onTick,
   }) async {
+    debugPrint('[WidgetRecorder] 🎬 Starting recording with $countdownSeconds second countdown');
     await start(
       countdown: Duration(seconds: countdownSeconds),
       onTick: onTick,
@@ -423,12 +440,16 @@ class WidgetRecorderController {
     GifQuality quality = GifQuality.medium,
   }) async {
     if (_isRecording || _isRecordingGif) {
-      debugPrint('[WidgetRecorder] ⚠️ Already recording');
+      debugPrint('[WidgetRecorder] ⚠️ Already recording - ignoring GIF export request');
       return null;
     }
 
     try {
-      debugPrint('[WidgetRecorder] 🎬 Starting GIF recording...');
+      debugPrint('[WidgetRecorder] 🎬 Starting GIF export...');
+      debugPrint('[WidgetRecorder] 🎬   ├─ Duration: ${duration.inSeconds} seconds');
+      debugPrint('[WidgetRecorder] 🎬   ├─ Quality: ${quality.name}');
+      debugPrint('[WidgetRecorder] 🎬   ├─ FPS: ${quality.fps}');
+      debugPrint('[WidgetRecorder] 🎬   └─ Colors: ${quality.colors}');
       
       _isRecordingGif = true;
       _gifFrames.clear();
@@ -440,9 +461,11 @@ class WidgetRecorderController {
       }
 
       _size = (renderObject as RenderRepaintBoundary).size;
+      debugPrint('[WidgetRecorder] 📐 Widget size: ${_size!.width.toInt()}x${_size!.height.toInt()}');
 
       // Start capturing frames
       final startTime = DateTime.now();
+      int capturedFrames = 0;
       _timer = Timer.periodic(
         Duration(milliseconds: 1000 ~/ _gifTargetFps),
         (timer) async {
@@ -450,11 +473,13 @@ class WidgetRecorderController {
           
           if (elapsed >= duration) {
             timer.cancel();
+            debugPrint('[WidgetRecorder] ⏱️ Recording duration reached - captured $capturedFrames frames');
             await _finishGifExport(quality);
           } else {
             final frame = await _captureFrameForGif();
             if (frame != null) {
               _gifFrames.add(frame);
+              capturedFrames++;
             }
           }
         },
@@ -464,6 +489,7 @@ class WidgetRecorderController {
       return null; // Will be returned in _finishGifExport
     } catch (e) {
       debugPrint('[WidgetRecorder] ❌ Error starting GIF export: $e');
+      debugPrint('[WidgetRecorder] ❌ Stack trace: ${StackTrace.current}');
       _isRecordingGif = false;
       _gifFrames.clear();
       onError?.call(e.toString());
@@ -478,12 +504,15 @@ class WidgetRecorderController {
     GifQuality quality = GifQuality.medium,
   }) async {
     if (_isRecording || _isRecordingGif) {
-      debugPrint('[WidgetRecorder] ⚠️ Already recording');
+      debugPrint('[WidgetRecorder] ⚠️ Already recording - ignoring GIF start request');
       return;
     }
 
     try {
       debugPrint('[WidgetRecorder] 🎬 Starting manual GIF recording...');
+      debugPrint('[WidgetRecorder] 🎬   ├─ Quality: ${quality.name}');
+      debugPrint('[WidgetRecorder] 🎬   ├─ FPS: ${quality.fps}');
+      debugPrint('[WidgetRecorder] 🎬   └─ Colors: ${quality.colors}');
       
       _isRecordingGif = true;
       _gifFrames.clear();
@@ -495,6 +524,7 @@ class WidgetRecorderController {
       }
 
       _size = (renderObject as RenderRepaintBoundary).size;
+      debugPrint('[WidgetRecorder] 📐 Widget size: ${_size!.width.toInt()}x${_size!.height.toInt()}');
 
       // Start capturing frames
       _timer = Timer.periodic(
@@ -503,6 +533,9 @@ class WidgetRecorderController {
           final frame = await _captureFrameForGif();
           if (frame != null) {
             _gifFrames.add(frame);
+            if (_gifFrames.length % 30 == 0) {
+              debugPrint('[WidgetRecorder] 📊 Captured ${_gifFrames.length} frames...');
+            }
           }
         },
       );
@@ -510,6 +543,7 @@ class WidgetRecorderController {
       debugPrint('[WidgetRecorder] ✅ Manual GIF recording started');
     } catch (e) {
       debugPrint('[WidgetRecorder] ❌ Error starting manual GIF recording: $e');
+      debugPrint('[WidgetRecorder] ❌ Stack trace: ${StackTrace.current}');
       _isRecordingGif = false;
       _gifFrames.clear();
       onError?.call(e.toString());
@@ -523,26 +557,30 @@ class WidgetRecorderController {
     GifQuality quality = GifQuality.medium,
   }) async {
     if (!_isRecordingGif) {
-      debugPrint('[WidgetRecorder] ⚠️ Not recording GIF');
+      debugPrint('[WidgetRecorder] ⚠️ Not recording GIF - ignoring stop request');
       return null;
     }
 
+    debugPrint('[WidgetRecorder] ⏹️ Stopping GIF recording (${_gifFrames.length} frames captured)');
     _timer?.cancel();
     return await _finishGifExport(quality);
   }
 
   Future<String?> _finishGifExport(GifQuality quality) async {
     try {
-      debugPrint('[WidgetRecorder] 🎨 Processing ${_gifFrames.length} frames...');
+      debugPrint('[WidgetRecorder] 🎨 Processing GIF export...');
+      debugPrint('[WidgetRecorder] 🎨   └─ Total frames captured: ${_gifFrames.length}');
 
       if (_gifFrames.isEmpty) {
         throw Exception('No frames captured');
       }
 
       // Create GIF animation
+      debugPrint('[WidgetRecorder] 🔄 Converting frames to GIF format...');
       final frames = <img.Image>[];
       
-      for (final frame in _gifFrames) {
+      for (int i = 0; i < _gifFrames.length; i++) {
+        final frame = _gifFrames[i];
         final byteData = await frame.toByteData(format: ui.ImageByteFormat.rawRgba);
         if (byteData != null) {
           final pixels = byteData.buffer.asUint8List();
@@ -558,8 +596,14 @@ class WidgetRecorderController {
           // Quantize colors for better GIF compression
           final quantized = img.quantize(imgFrame, numberOfColors: quality.colors);
           frames.add(quantized);
+          
+          if ((i + 1) % 10 == 0) {
+            debugPrint('[WidgetRecorder] 🔄   └─ Processed ${i + 1}/${_gifFrames.length} frames');
+          }
         }
       }
+
+      debugPrint('[WidgetRecorder] ✅ All frames converted (${frames.length} frames)');
 
       // For animated GIF with multiple frames
       if (frames.length > 1) {
@@ -567,7 +611,11 @@ class WidgetRecorderController {
         // GIF format uses centiseconds for frame delays
         final delayInCentiseconds = (100 / _gifTargetFps).round();
         
-        debugPrint('[WidgetRecorder] 🎨 Encoding GIF: ${frames.length} frames, ${_gifTargetFps} FPS, delay: ${delayInCentiseconds}cs');
+        debugPrint('[WidgetRecorder] 🎨 Encoding animated GIF:');
+        debugPrint('[WidgetRecorder] 🎨   ├─ Frames: ${frames.length}');
+        debugPrint('[WidgetRecorder] 🎨   ├─ FPS: $_gifTargetFps');
+        debugPrint('[WidgetRecorder] 🎨   ├─ Delay: ${delayInCentiseconds} centiseconds');
+        debugPrint('[WidgetRecorder] 🎨   └─ Colors: ${quality.colors}');
         
         // Create animated GIF with proper frame delay
         final encoder = img.GifEncoder(delay: delayInCentiseconds, repeat: 0);
@@ -576,25 +624,33 @@ class WidgetRecorderController {
           encoder.addFrame(frames[i]);
         }
         
+        debugPrint('[WidgetRecorder] 🔄 Finalizing GIF encoding...');
         final animatedGifBytes = encoder.finish();
         
         if (animatedGifBytes == null) {
           throw Exception('Failed to encode animated GIF');
         }
 
+        debugPrint('[WidgetRecorder] ✅ GIF encoded (${animatedGifBytes.length} bytes)');
+
         // Save to file
         final Directory dir;
         if (customSavePath != null) {
+          debugPrint('[WidgetRecorder] 📁 Using custom save path: $customSavePath');
           dir = Directory(customSavePath!);
           if (!await dir.exists()) {
+            debugPrint('[WidgetRecorder] 📁   └─ Creating directory...');
             await dir.create(recursive: true);
           }
         } else {
           dir = await getTemporaryDirectory();
+          debugPrint('[WidgetRecorder] 📁 Using temporary directory: ${dir.path}');
         }
         
         final filePath = '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.gif';
         final file = File(filePath);
+        
+        debugPrint('[WidgetRecorder] 💾 Writing GIF to file...');
         await file.writeAsBytes(animatedGifBytes);
 
         // Clean up
@@ -604,11 +660,13 @@ class WidgetRecorderController {
         _gifFrames.clear();
         _isRecordingGif = false;
 
-        debugPrint('[WidgetRecorder] ✅ GIF saved: $filePath (${frames.length} frames at ${_gifTargetFps} FPS)');
+        debugPrint('[WidgetRecorder] ✅ GIF saved successfully: $filePath');
+        debugPrint('[WidgetRecorder] 📊 Final stats: ${frames.length} frames at $_gifTargetFps FPS');
         onComplete?.call(filePath);
         return filePath;
       } else {
         // Single frame
+        debugPrint('[WidgetRecorder] 🎨 Encoding single-frame GIF...');
         final gifBytes = img.encodeGif(frames.first);
         
         final Directory dir;
@@ -632,12 +690,13 @@ class WidgetRecorderController {
         _gifFrames.clear();
         _isRecordingGif = false;
 
-        debugPrint('[WidgetRecorder] ✅ GIF saved: $filePath (single frame)');
+        debugPrint('[WidgetRecorder] ✅ Single-frame GIF saved: $filePath');
         onComplete?.call(filePath);
         return filePath;
       }
     } catch (e) {
       debugPrint('[WidgetRecorder] ❌ Error finishing GIF export: $e');
+      debugPrint('[WidgetRecorder] ❌ Stack trace: ${StackTrace.current}');
       
       // Clean up on error
       for (final frame in _gifFrames) {
@@ -671,6 +730,11 @@ class WidgetRecorderController {
   }) async {
     try {
       debugPrint('[WidgetRecorder] 📸 Capturing screenshot...');
+      debugPrint('[WidgetRecorder] 📸   ├─ Format: ${format.name.toUpperCase()}');
+      debugPrint('[WidgetRecorder] 📸   ├─ Pixel ratio: ${pixelRatio}x');
+      if (format == ImageFormat.jpg) {
+        debugPrint('[WidgetRecorder] 📸   └─ Quality: $quality%');
+      }
 
       final renderObject = _boundaryKey.currentContext?.findRenderObject();
       if (renderObject == null) {
@@ -679,17 +743,21 @@ class WidgetRecorderController {
 
       final boundary = renderObject as RenderRepaintBoundary;
       
+      debugPrint('[WidgetRecorder] 📸 Capturing image at ${pixelRatio}x resolution...');
       // Capture at high resolution for quality
       final image = await boundary.toImage(pixelRatio: pixelRatio);
+      debugPrint('[WidgetRecorder] ✅ Image captured: ${image.width}x${image.height} pixels');
       
       // Convert to bytes based on format
       final ByteData? byteData;
       String extension;
       
       if (format == ImageFormat.png) {
+        debugPrint('[WidgetRecorder] 🔄 Encoding as PNG...');
         byteData = await image.toByteData(format: ui.ImageByteFormat.png);
         extension = 'png';
       } else {
+        debugPrint('[WidgetRecorder] 🔄 Encoding as JPG...');
         // JPG format - quality parameter is used here
         byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
         extension = 'jpg';
@@ -703,21 +771,28 @@ class WidgetRecorderController {
             throw Exception('Failed to encode image');
           }
           
+          debugPrint('[WidgetRecorder] ⚠️ Note: Saving as PNG (native JPG encoding not supported)');
+          
           // Save as PNG and return (Flutter doesn't support JPG encoding with quality natively)
-          // We'll save as PNG for now - full JPG support would require additional dependencies
           final Directory dir;
           if (customSavePath != null) {
+            debugPrint('[WidgetRecorder] 📁 Using custom save path: $customSavePath');
             dir = Directory(customSavePath!);
             if (!await dir.exists()) {
+              debugPrint('[WidgetRecorder] 📁   └─ Creating directory...');
               await dir.create(recursive: true);
             }
           } else {
             dir = await getTemporaryDirectory();
+            debugPrint('[WidgetRecorder] 📁 Using temporary directory: ${dir.path}');
           }
           
           final filePath = '${dir.path}/screenshot_${DateTime.now().millisecondsSinceEpoch}.$extension';
           final file = File(filePath);
-          await file.writeAsBytes(pngByteData.buffer.asUint8List());
+          
+          final bytes = pngByteData.buffer.asUint8List();
+          debugPrint('[WidgetRecorder] 💾 Writing ${bytes.length} bytes to file...');
+          await file.writeAsBytes(bytes);
           
           debugPrint('[WidgetRecorder] ✅ Screenshot saved: $filePath');
           return filePath;
@@ -731,17 +806,23 @@ class WidgetRecorderController {
       // Save to directory
       final Directory dir;
       if (customSavePath != null) {
+        debugPrint('[WidgetRecorder] 📁 Using custom save path: $customSavePath');
         dir = Directory(customSavePath!);
         if (!await dir.exists()) {
+          debugPrint('[WidgetRecorder] 📁   └─ Creating directory...');
           await dir.create(recursive: true);
         }
       } else {
         dir = await getTemporaryDirectory();
+        debugPrint('[WidgetRecorder] 📁 Using temporary directory: ${dir.path}');
       }
       
       final filePath = '${dir.path}/screenshot_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final file = File(filePath);
-      await file.writeAsBytes(byteData.buffer.asUint8List());
+      
+      final bytes = byteData.buffer.asUint8List();
+      debugPrint('[WidgetRecorder] 💾 Writing ${bytes.length} bytes to file...');
+      await file.writeAsBytes(bytes);
 
       image.dispose();
 
@@ -749,6 +830,7 @@ class WidgetRecorderController {
       return filePath;
     } catch (e) {
       debugPrint('[WidgetRecorder] ❌ Error capturing screenshot: $e');
+      debugPrint('[WidgetRecorder] ❌ Stack trace: ${StackTrace.current}');
       onError?.call(e.toString());
       return null;
     }

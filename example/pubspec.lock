@@ -506,7 +506,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "1.1.0"
+    version: "1.0.5"
   xdg_directories:
     dependency: transitive
     description:
