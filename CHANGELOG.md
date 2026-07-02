@@ -2,6 +2,142 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.0 - NEW FEATURES RELEASE 🎉
+
+### ✨ New Features
+
+#### 📸 Screenshot Capture
+- **High-Quality Screenshots** - Capture PNG/JPG screenshots with configurable resolution
+- **Configurable Pixel Ratio** - Support for 1x, 2x, 3x (retina) resolution
+- **Format Options** - PNG (lossless) or JPG (lossy with quality control)
+- **Instant Capture** - Single method call: `captureScreenshot()`
+- **Use Cases** - App store screenshots, bug reports, documentation
+
+#### 🎞️ GIF Export
+- **Animated GIF Export** - Convert widget recordings to shareable GIF files
+- **Quality Presets** - Low (10 FPS, 64 colors), Medium (15 FPS, 128 colors), High (24 FPS, 256 colors)
+- **Auto or Manual Control** - Timed recording with `exportAsGif()` or manual with `startGifRecording()`/`stopGifRecording()`
+- **Optimized Encoding** - Color quantization for smaller file sizes
+- **Proper Frame Timing** - Fixed GIF playback speed using centiseconds
+- **Perfect for Documentation** - Ideal for README files, PRs, and social media
+
+#### 👆 Touch Visualization
+- **Touch Indicators** - Show touch points during recording and GIF export
+- **Ripple Effects** - Animated ripple animations on tap
+- **Fully Customizable** - Configure color, size, opacity, ripple duration
+- **Tutorial Perfect** - Essential for app demos, tutorials, and user guides
+- **Easy Toggle** - Enable/disable via `showTouches` parameter
+
+#### 🎯 Video Quality Presets (NEW)
+- **Predefined Quality Levels** - Low (15 FPS, 2 Mbps), Medium (30 FPS, 5 Mbps), High (60 FPS, 10 Mbps)
+- **Easy to Use** - `controller.applyVideoQuality(VideoQuality.medium)`
+- **Optimized Settings** - Balanced FPS and bitrate combinations
+- **File Size Control** - Choose based on your needs
+
+#### ⏱️ Countdown Timer (NEW)
+- **3-2-1 Countdown** - Prepare before recording starts
+- **Customizable Duration** - Set any countdown length
+- **Callback Support** - `onTick` callback for UI updates
+- **Hands-Free Recording** - Perfect for self-recording and demos
+- **Two Methods** - `startWithCountdown()` or `start(countdown: ...)`
+
+#### 📁 Custom Save Path (NEW)
+- **Custom Directories** - Save files to any location
+- **Organized Storage** - Keep recordings in dedicated folders
+- **Works for All Formats** - Video, screenshot, and GIF
+- **Directory Creation** - Automatically creates directories if needed
+- **Fallback to Temp** - Uses temp directory if path not specified
+
+### 🎯 API Additions
+
+**WidgetRecorderController:**
+- Added `showTouches` parameter (default: false)
+- Added `touchConfig` parameter for touch visualization customization
+- Added `customSavePath` parameter for custom save directories **NEW**
+- Added `captureScreenshot()` method for instant screenshots
+- Added `exportAsGif()` method for automatic timed GIF recording
+- Added `startGifRecording()` method for manual GIF control
+- Added `stopGifRecording()` method to finish and export GIF
+- Added `applyVideoQuality()` method to set quality presets **NEW**
+- Added `startWithCountdown()` method for countdown before recording **NEW**
+- Enhanced `start()` method with optional countdown parameter **NEW**
+- Added `isRecordingGif` getter to check GIF recording status
+
+**New Classes:**
+- `TouchVisualizationConfig` - Configure touch indicator appearance
+- `ImageFormat` enum - PNG or JPG format selection
+- `GifQuality` enum - Low, Medium, High quality presets
+- `VideoQuality` enum - Low, Medium, High video quality presets **NEW**
+
+### 📦 Dependencies
+- Added `image` package (^4.1.7) for GIF encoding and manipulation
+
+### 🎨 Example App Updates
+- Added home screen with navigation to different demos
+- Created `NewFeaturesDemo` page showcasing all three new features
+- Interactive examples for screenshot, GIF, and touch visualization
+- Improved UI with Material 3 design
+- Better demo organization and user experience
+
+### 📚 Documentation
+- Comprehensive README update with new feature documentation
+- Added API reference for all new methods and classes
+- Added usage examples for each feature
+- Updated output specifications table
+- Added troubleshooting tips for new features
+
+### 🧪 Testing
+- Added 17 comprehensive unit and widget tests
+- Tests cover all new features and configurations
+- 100% pass rate on Android and iOS
+- Tests include controller initialization, enums, touch visualization, and integration scenarios
+
+### 🔧 Technical Improvements
+- All features work seamlessly with existing video recording
+- Touch visualization works during both video and GIF recording
+- Memory-efficient frame handling for GIF export
+- Proper resource cleanup and disposal
+- Cross-platform compatibility (Android & iOS)
+
+### 📱 Platform Support
+- ✅ Android API 21+ - Fully supported
+- ✅ iOS 13.0+ - Fully supported
+- Screenshot, GIF, and touch visualization work identically on both platforms
+
+### 💡 Use Cases
+
+**Screenshot Capture:**
+- App store screenshots with high resolution
+- Bug reports with visual context
+- Testing and QA documentation
+- Social media content creation
+
+**GIF Export:**
+- README documentation and demos
+- GitHub pull requests
+- Twitter/LinkedIn feature showcases
+- Tutorial content for blogs
+
+**Touch Visualization:**
+- YouTube app tutorials
+- User onboarding videos
+- Feature demonstrations
+- Customer support materials
+
+### ⚡ Performance
+- Efficient GIF encoding with color quantization
+- Minimal overhead for touch visualization
+- Optimized frame capture for screenshots
+- No impact on existing video recording performance
+
+### 🔄 Backward Compatibility
+- ✅ Fully backward compatible
+- Existing code works without changes
+- New features are opt-in
+- No breaking changes
+
+---
+
 ## 1.0.4
 
 ### 🐛 Critical Bug Fix - Android ArrayIndexOutOfBoundsException

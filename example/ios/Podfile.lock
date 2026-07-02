@@ -36,7 +36,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   camera_avfoundation: be3be85408cd4126f250386828e9b1dfa40ab436
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   open_file_ios: 46184d802ee7959203f6392abcfa0dd49fdb5be0
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
