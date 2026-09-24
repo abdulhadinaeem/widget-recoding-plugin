@@ -66,7 +66,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  widget_recorder_plus: ^1.0.5
+  widget_recorder_plus: ^1.0.6
 ```
 
 Then run:
@@ -116,6 +116,16 @@ await controller.start();
 final videoPath = await controller.stop();
 ```
 
+**High-Resolution Recording (NEW v1.0.6):**
+```dart
+// Start with high-resolution recording (3x pixel ratio)
+await controller.start(pixelRatio: 3.0);
+
+// For camera/AR apps - match your screenshot resolution!
+await controller.start(pixelRatio: 2.0); // 2x resolution
+await controller.start(pixelRatio: 3.0); // 3x resolution (retina)
+```
+
 **With Countdown (NEW v1.0.5):**
 ```dart
 // Start with 3-second countdown
@@ -130,6 +140,94 @@ await controller.startWithCountdown(
 // Apply quality preset before recording
 controller.applyVideoQuality(VideoQuality.high); // 60 FPS, 10 Mbps
 await controller.start();
+```
+
+**Combined - High Quality + High Resolution:**
+```dart
+controller.applyVideoQuality(VideoQuality.high);
+await controller.start(pixelRatio: 3.0); // Best quality!
+```
+
+---
+
+## 📐 High-Resolution Video Recording (NEW v1.0.6)
+
+Record videos at higher resolutions using the `pixelRatio` parameter - perfect for camera views, AR apps, and detailed content:
+
+```dart
+// Standard resolution (widget logical size)
+await controller.start(pixelRatio: 1.0); // Default
+
+// 2x resolution (HD)
+await controller.start(pixelRatio: 2.0);
+
+// 3x resolution (Retina/Ultra HD)
+await controller.start(pixelRatio: 3.0);
+```
+
+### Resolution Comparison
+
+For a widget sized **393x849 dp**:
+
+| Pixel Ratio | Output Resolution | Use Case |
+|-------------|------------------|----------|
+| 1.0x (default) | 384x848 px | Standard recording, smaller files |
+| 2.0x | 768x1696 px | HD recording, good balance |
+| 3.0x | 1168x2544 px* | Ultra HD, camera/AR apps |
+
+*Rounded to nearest multiple of 16 for H.264 encoding
+
+### When to Use Higher Pixel Ratios:
+
+✅ **Camera & AR Apps** - Capture full camera resolution
+✅ **Detailed Graphics** - Charts, diagrams, fine text
+✅ **Professional Videos** - Marketing, tutorials
+✅ **High-DPI Displays** - Match screen resolution
+
+⚠️ **Trade-offs:**
+- Larger file sizes
+- More processing power
+- Slower frame capture
+
+### Example: AR Camera Recording
+
+```dart
+class ARRecordingExample extends StatelessWidget {
+  final controller = WidgetRecorderController();
+
+  Future<void> startHighResRecording() async {
+    // Apply high quality preset
+    controller.applyVideoQuality(VideoQuality.high);
+    
+    // Record at 3x resolution to match camera quality
+    await controller.start(pixelRatio: 3.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WidgetRecorder(
+      controller: controller,
+      child: Stack(
+        children: [
+          CameraPreview(cameraController),
+          AROverlayWidget(),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Logs Example:
+
+```
+[WidgetRecorder] 📐 Recording configuration:
+[WidgetRecorder] 📐   ├─ Widget size: 393x849 dp
+[WidgetRecorder] 📐   ├─ Pixel ratio: 3.0x
+[WidgetRecorder] 📐   ├─ Scaled size: 1179x2547 px
+[WidgetRecorder] 📐   ├─ Final resolution: 1168x2544 px
+[WidgetRecorder] 📐   ├─ FPS: 60
+[WidgetRecorder] 📐   └─ Custom bitrate: 10.0 Mbps
 ```
 
 ---
@@ -534,16 +632,26 @@ bool isRecordingGif = controller.isRecordingGif;  // NEW v1.0.5
 // Start video recording (auto-generates file path)
 await controller.start();
 
+// Start with high resolution (NEW v1.0.6)
+await controller.start(pixelRatio: 3.0);
+
 // Start with countdown (NEW v1.0.5)
 await controller.startWithCountdown(
   countdownSeconds: 3,
   onTick: (remaining) => print('Starting in $remaining'),
 );
 
+// Start with countdown and high resolution (NEW v1.0.6)
+await controller.startWithCountdown(
+  countdownSeconds: 3,
+  pixelRatio: 3.0,
+);
+
 // Start with custom countdown duration (NEW v1.0.5)
 await controller.start(
   countdown: Duration(seconds: 5),
   onTick: (remaining) => print('$remaining'),
+  pixelRatio: 2.0, // NEW v1.0.6
 );
 
 // Stop video recording (returns file path)

@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.6 - HIGH-RESOLUTION VIDEO RECORDING 🎥
+
+### ✨ New Feature
+
+#### 📐 High-Resolution Video Recording
+- **Pixel Ratio Support** - Record videos at 2x or 3x resolution for ultra-high quality
+- **Matches Screenshot Quality** - Video recording now supports same pixel ratio as screenshots
+- **Perfect for Camera/AR Apps** - Capture full camera resolution instead of logical widget size
+- **Enhanced Logging** - Shows widget size (dp), pixel ratio, scaled size (px), and final resolution
+
+### 🎯 API Additions
+
+**WidgetRecorderController:**
+- Added `pixelRatio` parameter to `start()` method (default: 1.0)
+- Added `pixelRatio` parameter to `startWithCountdown()` method (default: 1.0)
+- Enhanced frame capture to support high-resolution recording
+
+### 📊 Resolution Examples
+
+For a widget sized 393x849 dp:
+- **pixelRatio: 1.0** → 384x848 px (standard)
+- **pixelRatio: 2.0** → 768x1696 px (HD)
+- **pixelRatio: 3.0** → 1168x2544 px (Ultra HD/Retina)
+
+### 🔧 Technical Improvements
+- Frame capture now respects pixel ratio parameter
+- Automatic dimension rounding to H.264 multiples of 16
+- Enhanced logging shows full resolution pipeline
+- Memory-efficient image handling at higher resolutions
+
+### 📝 Usage
+
+```dart
+// High-resolution recording
+await controller.start(pixelRatio: 3.0);
+
+// Combined with quality preset
+controller.applyVideoQuality(VideoQuality.high);
+await controller.start(pixelRatio: 3.0);
+
+// With countdown and high resolution
+await controller.startWithCountdown(
+  countdownSeconds: 3,
+  pixelRatio: 3.0,
+);
+```
+
+### 🐛 Bug Fixes
+- Fixed low video resolution issue reported by Martijn te Molder
+- Videos now match screenshot resolution when using same pixel ratio
+- Proper scaling for camera and AR overlay recordings
+
+### 🙏 Special Thanks
+- Thanks to **Martijn te Molder** for the detailed bug report with logs!
+
+---
+
 ## 1.0.5 - NEW FEATURES RELEASE 🎉
 
 ### ✨ New Features

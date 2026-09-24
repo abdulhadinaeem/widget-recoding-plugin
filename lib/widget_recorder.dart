@@ -213,9 +213,11 @@ class WidgetRecorderController {
   /// 
   /// [countdown] - Optional countdown duration before recording starts
   /// [onTick] - Optional callback called each second during countdown
+  /// [pixelRatio] - Pixel ratio for high-resolution recording (default: 1.0). Use 2.0 or 3.0 for higher quality
   Future<void> start({
     Duration? countdown,
     Function(int remainingSeconds)? onTick,
+    double pixelRatio = 1.0,
   }) async {
     if (_isRecording) {
       debugPrint('[WidgetRecorder] ⚠️ Already recording - ignoring start request');
@@ -251,6 +253,9 @@ class WidgetRecorderController {
 
     try {
       debugPrint('[WidgetRecorder] 🎬 Starting recording...');
+      if (pixelRatio != 1.0) {
+        debugPrint('[WidgetRecorder] 📐 Using pixel ratio: ${pixelRatio}x for high-resolution recording');
+      }
 
       // Get output directory
       final Directory dir;
@@ -280,12 +285,19 @@ class WidgetRecorderController {
 
       _size = (renderObject as RenderRepaintBoundary).size;
 
+      // Apply pixel ratio to get higher resolution
+      final int scaledWidth = (_size!.width * pixelRatio).toInt();
+      final int scaledHeight = (_size!.height * pixelRatio).toInt();
+
       // Round dimensions down to the nearest multiple of 16 for perfect encoding
-      final int validWidth = (_size!.width.toInt() ~/ 16) * 16;
-      final int validHeight = (_size!.height.toInt() ~/ 16) * 16;
+      final int validWidth = (scaledWidth ~/ 16) * 16;
+      final int validHeight = (scaledHeight ~/ 16) * 16;
 
       debugPrint('[WidgetRecorder] 📐 Recording configuration:');
-      debugPrint('[WidgetRecorder] 📐   ├─ Resolution: ${validWidth}x$validHeight');
+      debugPrint('[WidgetRecorder] 📐   ├─ Widget size: ${_size!.width.toInt()}x${_size!.height.toInt()} dp');
+      debugPrint('[WidgetRecorder] 📐   ├─ Pixel ratio: ${pixelRatio}x');
+      debugPrint('[WidgetRecorder] 📐   ├─ Scaled size: ${scaledWidth}x$scaledHeight px');
+      debugPrint('[WidgetRecorder] 📐   ├─ Final resolution: ${validWidth}x$validHeight px');
       debugPrint('[WidgetRecorder] 📐   ├─ FPS: $_fps');
       debugPrint('[WidgetRecorder] 📐   ├─ Audio: ${recordAudio ? "enabled" : "disabled"}');
       if (_customBitrate != null) {
@@ -303,7 +315,7 @@ class WidgetRecorderController {
 
       _timer = Timer.periodic(
         Duration(milliseconds: 1000 ~/ _fps),
-        (_) => _captureFrame(),
+        (_) => _captureFrame(pixelRatio),
       );
 
       debugPrint('[WidgetRecorder] ✅ Recording started successfully');
@@ -319,14 +331,17 @@ class WidgetRecorderController {
   /// 
   /// [countdownSeconds] - Number of seconds to countdown (default: 3)
   /// [onTick] - Called each second with remaining seconds
+  /// [pixelRatio] - Pixel ratio for high-resolution recording (default: 1.0)
   Future<void> startWithCountdown({
     int countdownSeconds = 3,
     Function(int remainingSeconds)? onTick,
+    double pixelRatio = 1.0,
   }) async {
     debugPrint('[WidgetRecorder] 🎬 Starting recording with $countdownSeconds second countdown');
     await start(
       countdown: Duration(seconds: countdownSeconds),
       onTick: onTick,
+      pixelRatio: pixelRatio,
     );
   }
 
@@ -353,7 +368,7 @@ class WidgetRecorderController {
     }
   }
 
-  Future<void> _captureFrame() async {
+  Future<void> _captureFrame([double pixelRatio = 1.0]) async {
     try {
       final renderObject = _boundaryKey.currentContext?.findRenderObject();
       if (renderObject == null) return;
@@ -361,12 +376,13 @@ class WidgetRecorderController {
       final boundary = renderObject as RenderRepaintBoundary;
 
       // Calculate the exact dimensions we need (rounded to multiples of 16)
-      final validWidth = (_size!.width.toInt() ~/ 16) * 16;
-      final validHeight = (_size!.height.toInt() ~/ 16) * 16;
+      final scaledWidth = (_size!.width * pixelRatio).toInt();
+      final scaledHeight = (_size!.height * pixelRatio).toInt();
+      final validWidth = (scaledWidth ~/ 16) * 16;
+      final validHeight = (scaledHeight ~/ 16) * 16;
 
-      // Capture at 1.0 pixel ratio to match encoder dimensions exactly
-      // This prevents size mismatches between Dart and native layers
-      final image = await boundary.toImage(pixelRatio: 1.0);
+      // Capture at specified pixel ratio to match encoder dimensions
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
 
       // Resize only if the captured size doesn't match encoder dimensions
       ui.Image finalImage = image;
